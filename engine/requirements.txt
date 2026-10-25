@@ -1,0 +1,5 @@
+# Verified during M0 on Python 3.12.10 (64-bit).
+# MediaPipe supplies the single OpenCV distribution used by GestureOS.
+mediapipe==1.1.1
+opencv-contrib-python==5.0.0.93
+numpy==2.5.4
