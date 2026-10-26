@@ -4,12 +4,19 @@ from gestureos_engine.safety import GestureHoldDetector
 from gestureos_engine.cooldown import ActionCooldown
 from gestureos_engine.dry_run import DryRunExecutor
 from gestureos_engine.emergency import EmergencyStopController
+from gestureos_engine.automation import WindowsAutomation
 
 
 class GestureSafetyPipeline:
     """Coordinate gesture safety checks and dry-run execution."""
 
-    def __init__(self, hold_duration=0.8, cooldown_duration=1.0):
+    def __init__(
+        self,
+        hold_duration=0.8,
+        cooldown_duration=1.0,
+        automation=None,
+        emergency_stop_available=True,
+    ):
         self.activation = GestureActivation()
 
         self.hold_detector = GestureHoldDetector(
@@ -23,6 +30,11 @@ class GestureSafetyPipeline:
         self.executor = DryRunExecutor(
             activation=self.activation
         )
+        self.automation = automation or WindowsAutomation(
+            activation=self.activation,
+            dry_run=True,
+            emergency_stop_available=emergency_stop_available,
+        )
 
         self.emergency = EmergencyStopController(
             activation=self.activation,
@@ -33,6 +45,8 @@ class GestureSafetyPipeline:
     def enable(self):
         """Enable gesture processing after clearing stale hold state."""
 
+        if not self.automation.dry_run and not self.emergency.hotkey_available:
+            return False
         self.hold_detector.reset()
         return self.activation.enable()
 
@@ -116,5 +130,41 @@ class GestureSafetyPipeline:
                 "action": action,
             }
 
-        # Step 4: Simulate the action.
+        if gesture == Gesture.PINCH:
+            result = self.automation.left_click()
+            if result.get("action") == "LEFT_CLICK":
+                result = {**result, "action": "MOUSE_CLICK"}
+            if result["status"] == "SIMULATED":
+                self.executor.history.append({
+                    "gesture": gesture.value,
+                    "action": "MOUSE_CLICK",
+                    "mode": "DRY_RUN",
+                    "status": "SIMULATED",
+                })
+            return result
         return self.executor.execute(gesture)
+
+    def tracking_lost(self):
+        """Clear gesture confirmation so loss cannot produce an action."""
+
+        self.hold_detector.reset()
+        self.cooldown.reset()
+
+    def camera_failed(self):
+        """Fail closed when capture cannot provide frames."""
+
+        self.tracking_lost()
+        self.activation.camera_failure()
+
+    def start_emergency_stop(self):
+        """Register the global stop shortcut before real automation."""
+
+        available = self.emergency.start_hotkey()
+        self.automation.emergency_stop_available = available
+        return available
+
+    def shutdown(self):
+        """Stop the global shortcut and fail closed."""
+
+        self.emergency.trigger()
+        self.emergency.stop_hotkey()

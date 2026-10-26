@@ -41,6 +41,11 @@ class GestureActivation:
 
         self.state = ActivationState.EMERGENCY_STOPPED
 
+    def camera_failure(self):
+        """Fail closed when camera input is unavailable."""
+
+        self.emergency_stop()
+
     def reset_emergency(self):
         """Reset emergency stop to the safe DISABLED state."""
 

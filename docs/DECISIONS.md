@@ -12,5 +12,7 @@
 | Local privacy defaults | Approved | Loopback-only service, token, no frame persistence, no telemetry, no Administrator rights. |
 | PyInstaller onedir and electron-builder | Approved | Packaging is tested early; onedir reduces startup and antivirus risk. |
 | PySide6 fallback | Conditional | Use only if M6 packaging cannot pass the clean-account test after two focused weeks. |
+| M5 global emergency stop | Approved | Ctrl+Alt+Shift+X uses the Windows RegisterHotKey message path; real automation fails closed when registration is unavailable. |
+| M5 scroll mapping | Deferred live mapping | The backend is bounded and rate-limited, but live scrolling remains disabled until a deliberate gesture is validated. |
 
 Add a row before adding or changing a dependency, architecture boundary, or safety policy.

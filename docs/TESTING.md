@@ -20,6 +20,39 @@ These are research targets to measure and tune locally, not guarantees:
 
 Record measured FPS, delay, CPU, memory, failures, and tuning decisions in `PROGRESS.md` and `DECISIONS.md`.
 
+## M5 controlled Windows tests
+
+Run unit tests from PowerShell without touching the real mouse:
+
+```powershell
+Set-Location 'C:\Users\ADMIN\OneDrive\Desktop\My_Personal\My Project\GestureOS-Project\engine'
+& .\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+
+Safe dry-run tools:
+
+```powershell
+& .\.venv\Scripts\python.exe tools\test_gesture_click_dry_run.py
+& .\.venv\Scripts\python.exe tools\test_scroll_dry_run.py
+& .\.venv\Scripts\python.exe tools\verify_emergency_stop.py
+```
+
+The cursor-only tool is `tools\test_async_cursor.py`. It starts disabled, requires the
+global emergency stop to register, and performs no clicking or scrolling. Press `E`
+only after confirming the preview, press `S` or Ctrl+Alt+Shift+X to stop, `R` to reset,
+and `Q` to quit. Camera failure and tracking loss reset cursor smoothing and block actions.
+
+The controlled real-click tool is `tools\test_real_click.py`. It starts disabled and
+requires typing `YES`, but it is still a physical click test: position the cursor over
+a safe target and keep the PyAutoGUI corner fail-safe available. Run it only on a
+non-production desktop. No test tool automatically enables real automation.
+
+Known limitations: global hotkeys can be blocked by Windows policy, another registered
+owner, secure desktop transitions, or privilege boundaries. A successful registration
+does not guarantee availability on the secure desktop, so manual verification must
+include the preview unfocused. The async worker reduces processing backlog by selecting
+the newest frame; it does not increase the webcam's physical FPS.
+
 ## M0 environment record
 
 Verified on 2026-10-25 with the project-local `engine/.venv/`:

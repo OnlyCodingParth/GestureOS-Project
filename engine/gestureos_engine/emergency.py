@@ -5,6 +5,7 @@ from gestureos_engine.activation import (
 
 from gestureos_engine.safety import GestureHoldDetector
 from gestureos_engine.cooldown import ActionCooldown
+from gestureos_engine.hotkey import GlobalEmergencyHotkey
 
 
 class EmergencyStopController:
@@ -15,6 +16,7 @@ class EmergencyStopController:
         activation=None,
         hold_detector=None,
         cooldown=None,
+        hotkey=None,
     ):
         self.activation = (
             activation
@@ -33,6 +35,8 @@ class EmergencyStopController:
             if cooldown is not None
             else ActionCooldown()
         )
+        self.hotkey = hotkey
+        self.hotkey_available = hotkey is not None
 
     def trigger(self):
         """Activate emergency stop and reset safety components."""
@@ -44,6 +48,22 @@ class EmergencyStopController:
         self.cooldown.reset()
 
         return self.activation.state
+
+    def start_hotkey(self):
+        """Start the independent stop shortcut; return False on failure."""
+
+        if self.hotkey is None:
+            self.hotkey = GlobalEmergencyHotkey(self.trigger)
+        try:
+            self.hotkey_available = self.hotkey.start()
+        except (AttributeError, OSError, RuntimeError):
+            self.hotkey_available = False
+        return self.hotkey_available
+
+    def stop_hotkey(self):
+        if self.hotkey is not None:
+            self.hotkey.stop()
+        self.hotkey_available = False
 
     def reset(self):
         """Reset emergency stop without automatically enabling GestureOS."""
